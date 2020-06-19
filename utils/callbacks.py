@@ -43,7 +43,7 @@ def save_predict_image(test_img, exp_dir, model):
         on_epoch_end=save_predict(test_img, exp_dir, model, file_writer_image))
 
 
-def early_stopping(monitor='val_loss',  patience=20):
+def early_stopping(monitor='val_accuracy',  patience=20):
     return EarlyStopping(
         monitor=monitor, min_delta=0.0005, patience=patience, verbose=1, mode='auto',
         restore_best_weights=True,

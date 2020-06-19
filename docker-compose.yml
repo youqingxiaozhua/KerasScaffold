@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+  dl_homework:
+    build: .
+#    runtime: nvidia
+    volumes:
+      - .:/opt/DLHomework/
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0,1
+    gpus: all
+    #    image: nvidia/cuda:10.1-base
+#    command: bash -c "nvidia-smi"
+    command: bash -c "sh /opt/DLHomework/scripts/cat_dog.sh"
+#    ports:
+#      - "443:443"
+    restart: "no"
+

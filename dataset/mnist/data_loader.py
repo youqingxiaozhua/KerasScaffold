@@ -31,13 +31,15 @@ class DataLoader:
         }
         x, y = data[mode]
 
-        setattr(self, '%s_size', len(x))
-        logging.debug('%s_x shape: %s' % (mode, tf.shape(x)))
+        setattr(self, '%s_size'%mode, len(x))
+        logging.info('%s_x shape: %s' % (mode, tf.shape(x)))
         x, y = self.pre_process((x, y))
         ds = tf.data.Dataset.from_tensor_slices((x, y))
-        ds = ds.shuffle(len(x)).batch(FLAGES.batch_size)
-        if mode == 'train':
-            ds.repeat()
+        ds = ds.shuffle(len(x))
+        # if mode == 'train':
+        #     ds.repeat()
+        ds = ds.batch(FLAGES.batch_size)
+
         ds = ds.prefetch(AUTOTUNE)
         return ds
 

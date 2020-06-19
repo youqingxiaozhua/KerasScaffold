@@ -163,8 +163,8 @@ class DataSet:
             lambda: tf.image.decode_png(image, channels=self.input_shape[-1]))
         # image = tf.image.resize_with_crop_or_pad(image, self.input_shape[0], self.input_shape[1])
         # resize and cast to float will be done in augment
-        # image = tf.image.resize(image, (self.input_shape[0:2]))
-        # image /= 255.
+        image = tf.image.resize(image, (self.input_shape[0:2]))
+        image /= 255.
         return image
 
 
@@ -175,8 +175,10 @@ class ClassifyDataset(DataSet):
 
     def preprocess(self, image, label):
         """归一化、统一文件大小"""
-        image = tf.image.convert_image_dtype(image, tf.float32)  # Cast and normalize the image to [0,1]
+        tf.print(self.input_shape)
         image = tf.image.resize_with_crop_or_pad(image, *self.input_shape[0:2])
+        image = tf.image.convert_image_dtype(image, tf.float32)  # Cast and normalize the image to [0,1]
+        image = image / 255.0
         return image, label
 
     def augment(self, image, label):
@@ -185,7 +187,7 @@ class ClassifyDataset(DataSet):
     def get(self, mode):
         csv_file = os.path.join(self.image_set_dir, '%s.csv' % mode)
         lines = np.loadtxt(csv_file, dtype=np.unicode, delimiter=',')
-        setattr(self, '%s_size', lines.shape[0])
+        setattr(self, '%s_size' % mode, lines.shape[0])
         logging.info('%s size: %s' % (mode, lines.shape[0]))
         x = lines[:, 0]
         y = lines[:, 1].astype(int)
@@ -197,13 +199,13 @@ class ClassifyDataset(DataSet):
 
         image_label_ds = tf.data.Dataset.zip((image_ds, label_ds))
         ds = image_label_ds.cache()
-        ds = ds.map(self.preprocess, num_parallel_calls=AUTOTUNE)
+        # ds = ds.map(self.preprocess, num_parallel_calls=AUTOTUNE)
+        ds = image_label_ds.shuffle(buffer_size=20480)
         if mode == 'train':
-            ds = image_label_ds.shuffle(buffer_size=2048)
             ds = ds.map(self.augment, num_parallel_calls=AUTOTUNE)
         ds = ds.batch(self.batch_size)
-        if mode == 'train':
-            ds = ds.repeat()
+        # if mode == 'train':
+        #     ds = ds.repeat()
         ds = ds.prefetch(buffer_size=AUTOTUNE)
         return ds
 

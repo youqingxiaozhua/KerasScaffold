@@ -24,7 +24,7 @@ class DataLoader(ClassifyDataset):
         self.image_set_dir = os.path.join(BASE_DIR, 'processed')
 
     def augment(self, image, label):
-        image = tf.image.convert_image_dtype(image, tf.float32)  # Cast and normalize the image to [0,1]
+        # image = tf.image.convert_image_dtype(image, tf.float32)  # Cast and normalize the image to [0,1]
         image = tf.image.resize_with_crop_or_pad(image, *self.input_shape[0:2])  # Add 6 pixels of padding
         image = tf.image.random_brightness(image, max_delta=0.5)  # Random brightness
         image = op_with_random(image, tf.image.flip_left_right)
@@ -48,20 +48,7 @@ def test(argv):
         batch_size=2,
         classes=2
     )
-    tds = ds.get('train')
-    plt.figure()
-    count = 0
-    for im, l in tds:
-        print('curr count:', count)
-        for i in im:
-            plt.imshow(i)
-            if count >=2:
-                break
-            count += 1
-        if count >= 4:
-            break
-        count += 1
-    plt.show()
+    ds.plot_image('train')
 
 
 if __name__ == '__main__':

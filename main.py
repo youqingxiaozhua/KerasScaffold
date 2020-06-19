@@ -26,14 +26,14 @@ def main(argv):
     data_dir = os.path.join(BASE_DIR, 'dataset', FLAGS.dataset)
     exp_dir = os.path.join(data_dir, 'exp', FLAGS.exp_name)
     model_dir = os.path.join(exp_dir, 'ckpt')
-    log_dir = os.path.join(exp_dir, 'logs')
+    log_dir = exp_dir
     os.makedirs(model_dir, exist_ok=True)
-    os.makedirs(log_dir, exist_ok=True)
+    # os.makedirs(log_dir, exist_ok=True)
     model_path = os.path.join(model_dir, 'model-{epoch:04d}.ckpt.h5')
 
     # logging
     log_format = '%(asctime)s %(message)s'
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO, format=log_format, datefmt='%m/%d %I:%M:%S %p')
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format=log_format, datefmt='%m/%d %I:%M:%S %p')
     fh = logging.FileHandler(os.path.join(log_dir, 'log.txt'))
     fh.setFormatter(logging.Formatter(log_format))
     logging.getLogger().addHandler(fh)
@@ -63,13 +63,14 @@ def main(argv):
             model.load_weights(model_path.format(epoch=largest_epoch))
         model.compile(
             optimizer=SGD(momentum=0.9),
-            loss='categorical_crossentropy',
+            loss='binary_crossentropy',
             metrics=["accuracy",
                      Recall(),
                      Precision(),
                      # MeanIoU(num_classes=FLAGS.classes)
                      ],
         )
+        model.summary()
         verbose = 1 if FLAGS.debug is True else 2
         if 'train' in FLAGS.mode:
             callbacks = [
@@ -78,7 +79,7 @@ def main(argv):
                 early_stopping(patience=FLAGS.early_stopping_patience)
             ]
             train_ds = dataset.get('train')  # get first to calculate train size
-            steps_per_epoch = ceil(dataset.train_size / FLAGS.batch_size)
+            steps_per_epoch = dataset.train_size // FLAGS.batch_size
             model.fit(
                 train_ds,
                 epochs=FLAGS.epoch,
@@ -86,14 +87,14 @@ def main(argv):
                 callbacks=callbacks,
                 initial_epoch=largest_epoch,
                 verbose=verbose,
-                steps_per_epoch=steps_per_epoch,
+                # steps_per_epoch=steps_per_epoch,
             )
         if 'test' in FLAGS.mode:
             # 学习valid
             model.fit(
                 dataset.get('valid'),
                 epochs=3,
-                callbacks=callbacks,
+                # callbacks=callbacks,
                 verbose=verbose
             )
             model.save_weights(os.path.join(model_dir, 'model.h5'))
