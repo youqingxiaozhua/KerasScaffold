@@ -28,7 +28,7 @@ from __future__ import print_function
 import os
 
 from tensorflow.keras import layers, backend, models
-from tensorflow.keras.utils import get_source_inputs
+from tensorflow.keras.utils import get_source_inputs, get_file
 
 __all__ = ('ResNet50', 'ResNet50V2')
 
@@ -389,7 +389,7 @@ def ResNet(stack_fn,
         else:
             file_name = model_name + '_weights_tf_dim_ordering_tf_kernels_notop.h5'
             file_hash = WEIGHTS_HASHES[model_name][1]
-        weights_path = keras_utils.get_file(file_name,
+        weights_path = get_file(file_name,
                                             BASE_WEIGHTS_PATH + file_name,
                                             cache_subdir='models',
                                             file_hash=file_hash)
@@ -404,7 +404,7 @@ def ResNet50(include_top=True,
              weights='imagenet',
              input_tensor=None,
              input_shape=None,
-             pooling=None,
+             pooling='max',
              classes=1000,
              **kwargs):
     def stack_fn(x):
@@ -413,11 +413,18 @@ def ResNet50(include_top=True,
         x = stack1(x, 256, 6, name='conv4')
         x = stack1(x, 512, 3, name='conv5')
         return x
-    return ResNet(stack_fn, False, True, 'resnet50',
-                  include_top, weights,
+    input = layers.Input(shape=input_shape)
+    resnet = ResNet(stack_fn, False, True, 'resnet50',
+                  False, weights,
                   input_tensor, input_shape,
                   pooling, classes,
                   **kwargs)
+    x = resnet(input)
+
+    x = layers.Dense(512, 'relu')(x)
+    x = layers.Dense(1, 'sigmoid')(x)
+    model = models.Model(input, x, name='ResNet50')
+    return model
 
 
 def ResNet101(include_top=True,

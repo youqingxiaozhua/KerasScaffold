@@ -3,10 +3,10 @@ from tensorflow.keras import layers as l
 from absl import flags
 FLAGS = flags.FLAGS
 
-__all__ = ['alexnet', 'alexnet_bn']
+__all__ = ['lenet', 'lenet_bn']
 
 
-def alexnet(input_shape, classes, *args, **kwargs):
+def lenet(input_shape, classes, *args, **kwargs):
     inputs = keras.Input(shape=input_shape, name='digits')
     x = l.Conv2D(64, (3, 3), padding='same', activation='relu')(inputs)
     x = l.MaxPool2D()(x)
@@ -23,7 +23,7 @@ def alexnet(input_shape, classes, *args, **kwargs):
     return model
 
 
-def alexnet_bn():
+def lenet_bn():
     inputs = keras.Input(shape=FLAGS.input_shape, name='digits')
     x = l.Conv2D(64, (3, 3), padding='same')(inputs)
     x = l.BatchNormalization()(x)
