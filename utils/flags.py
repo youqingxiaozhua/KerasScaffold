@@ -6,7 +6,7 @@ def define_flages():
     flags.DEFINE_integer('epoch', 100, 'epoch number')
     flags.DEFINE_integer('classes', None, 'class number')
     flags.DEFINE_float('lr', 0.001, 'learning rate')
-    flags.DEFINE_bool('resume', True, 'if resume to continue')
+    flags.DEFINE_string('resume', 'ckpt', '"ckpt" for resume from checkpoint, or file path to weights file')
     flags.DEFINE_string('exp_name', None, 'exp name')
     flags.DEFINE_string('dataset', None, 'dataset name, relative to ./dataset')
     flags.DEFINE_string('model', None, 'model name')
@@ -19,4 +19,5 @@ def define_flages():
     flags.DEFINE_bool('debug', False, 'debug mode verbose will set to 1(interact mode)')
     # model
     flags.DEFINE_string('weights', None, 'pretrain weights')
+    flags.DEFINE_integer('freeze_layers', None, 'freeze some layers from input')
     return flags

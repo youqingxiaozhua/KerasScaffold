@@ -45,22 +45,29 @@ def main(argv):
 
     # resume from checkpoint
     largest_epoch = 0
-    resume_file_exist = False
-    if FLAGS.resume:
+    if FLAGS.resume == 'ckpt':
         chkpts = tf.io.gfile.glob(model_dir + '/*.ckpt.h5')
         if len(chkpts):
             largest_epoch = sorted([int(i[-12:-8]) for i in chkpts], reverse=True)[0]
             print('resume from epoch', largest_epoch)
-            resume_file_exist = True
+            weight_path = model_path.format(epoch=largest_epoch)
+        else:
+            weight_path = None
+    elif len(FLAGS.resume):
+        assert os.path.isfile(FLAGS.resume)
+        weight_path = FLAGS.resume
+    else:
+        weight_path = None
 
     dataset = importlib.import_module('dataset.%s.data_loader' % FLAGS.dataset).DataLoader(**FLAGS.flag_values_dict())
     strategy = tf.distribute.MirroredStrategy()
     with strategy.scope():
         model = globals()[FLAGS.model](**FLAGS.flag_values_dict())
         # model = alexnet()
-        if FLAGS.resume and resume_file_exist:
+        if FLAGS.resume and weight_path:
             logging.info('resume from previous ckp: %s' % largest_epoch)
-            model.load_weights(model_path.format(epoch=largest_epoch))
+            model.load_weights(weight_path)
+        model.layers[1].trainable = False
         model.compile(
             optimizer=SGD(momentum=0.9),
             loss='binary_crossentropy',
@@ -71,6 +78,7 @@ def main(argv):
                      ],
         )
         model.summary()
+        logging.info('There are %s layers in model' % len(model.layers))
         verbose = 1 if FLAGS.debug is True else 2
         if 'train' in FLAGS.mode:
             callbacks = [
@@ -79,7 +87,6 @@ def main(argv):
                 early_stopping(patience=FLAGS.early_stopping_patience)
             ]
             train_ds = dataset.get('train')  # get first to calculate train size
-            steps_per_epoch = dataset.train_size // FLAGS.batch_size
             model.fit(
                 train_ds,
                 epochs=FLAGS.epoch,
@@ -87,8 +94,15 @@ def main(argv):
                 callbacks=callbacks,
                 initial_epoch=largest_epoch,
                 verbose=verbose,
-                # steps_per_epoch=steps_per_epoch,
             )
+
+            # evaluate before train on valid
+            result = model.evaluate(
+                dataset.get('test'),
+            )
+            logging.info('evaluate before train on valid result:')
+            for i in range(len(result)):
+                logging.info('%s:\t\t%s' % (model.metrics_names[i], result[i]))
         if 'test' in FLAGS.mode:
             # 学习valid
             model.fit(
