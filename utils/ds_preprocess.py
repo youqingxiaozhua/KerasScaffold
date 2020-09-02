@@ -14,6 +14,11 @@ from utils.path import DATASET_DIR
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 
+def write_items_to_txt(filename, items):
+    with open(filename, 'w') as f:
+        f.write('\n'.join(items))
+
+
 class Process:
     def __init__(self, source, dest, split=(8, 1, 1), clean=False, segment=False,
                  label_source='',
