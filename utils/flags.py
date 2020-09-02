@@ -9,7 +9,8 @@ def define_flages():
     flags.DEFINE_string('resume', 'ckpt', '"ckpt" for resume from checkpoint, or file path to weights file')
     flags.DEFINE_string('exp_name', None, 'exp name')
     flags.DEFINE_string('dataset', None, 'dataset name, relative to ./dataset')
-    flags.DEFINE_string('model', None, 'model name')
+    flags.DEFINE_string('model', None, 'model name')  # must be define in /models/__init__.py
+    flags.DEFINE_string('loss', None, 'loss name')  # must be define in /losses/__init__.py
     flags.DEFINE_enum('mode', 'train', ('train', 'train_test'), 'run mode')
 
     flags.DEFINE_multi_integer('input_shape', None, 'model input shape')

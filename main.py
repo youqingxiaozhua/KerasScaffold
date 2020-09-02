@@ -12,6 +12,7 @@ from tensorflow.keras.optimizers import SGD
 from tensorflow.python.keras.metrics import Recall, Precision
 
 from models import *
+from losses import *
 from utils.callbacks import model_checkpoint, tensorboard, early_stopping
 from utils.flags import define_flages
 from utils.path import BASE_DIR
@@ -67,14 +68,16 @@ def main(argv):
         if FLAGS.resume and weight_path:
             logging.info('resume from previous ckp: %s' % largest_epoch)
             model.load_weights(weight_path)
-        model.layers[1].trainable = False
+        # model.layers[1].trainable = False
+        loss = globals()[FLAGS.loss]
         model.compile(
             optimizer=SGD(momentum=0.9),
-            loss='binary_crossentropy',
+            # loss='binary_crossentropy',
+            loss=loss,
             metrics=["accuracy",
                      Recall(),
                      Precision(),
-                     # MeanIoU(num_classes=FLAGS.classes)
+                     MeanIoU(num_classes=FLAGS.classes)
                      ],
         )
         model.summary()
@@ -84,7 +87,7 @@ def main(argv):
             callbacks = [
                 model_checkpoint(filepath=model_path, monitor=FLAGS.model_checkpoint_monitor),
                 tensorboard(log_dir=os.path.join(exp_dir, 'tb-logs')),
-                early_stopping(patience=FLAGS.early_stopping_patience)
+                early_stopping(monitor=FLAGS.model_checkpoint_monitor, patience=FLAGS.early_stopping_patience)
             ]
             train_ds = dataset.get('train')  # get first to calculate train size
             model.fit(
@@ -97,12 +100,12 @@ def main(argv):
             )
 
             # evaluate before train on valid
-            result = model.evaluate(
-                dataset.get('test'),
-            )
-            logging.info('evaluate before train on valid result:')
-            for i in range(len(result)):
-                logging.info('%s:\t\t%s' % (model.metrics_names[i], result[i]))
+            # result = model.evaluate(
+            #     dataset.get('test'),
+            # )
+            # logging.info('evaluate before train on valid result:')
+            # for i in range(len(result)):
+            #     logging.info('%s:\t\t%s' % (model.metrics_names[i], result[i]))
         if 'test' in FLAGS.mode:
             # 学习valid
             model.fit(
