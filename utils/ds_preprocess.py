@@ -1,7 +1,8 @@
 import os
+import re
 import shutil
 import logging
-
+import glob
 import random
 import tensorflow as tf
 import numpy as np
@@ -248,3 +249,19 @@ def op_with_random(image, func, rand=0.5, *args, **kwargs):
     return image
 
 
+def read_txt(file):
+    with open(file, 'r') as f:
+        content = f.read().split('\n')
+    return content
+
+
+def delete_early_ckpt(model_path, n=3):
+    """
+    保留model_path中后 n 个ckpt
+    """
+    file = '%s/model-*.ckpt.h5' % model_path
+    files = glob.glob(file)
+    # i = files[0]
+    files.sort(key=lambda i:int(re.findall(r'model-(\d{4}).ckpt.h5', i)[0]))
+    for i in files[:-n]:
+        os.remove(i)

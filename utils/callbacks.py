@@ -50,3 +50,17 @@ def early_stopping(monitor='val_accuracy',  patience=20):
     )
 
 
+def lr_schedule(name, epochs=200):
+    def poly(epoch, lr):
+        return lr * (1- epoch/epochs) ** 0.9
+
+    def constant(epoch, lr):
+        return lr
+    schedulers = {
+        'poly': poly,
+        'constant': constant
+    }
+    return schedulers[name]
+
+
+

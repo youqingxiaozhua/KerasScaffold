@@ -3,17 +3,28 @@ import os
 import sys
 from math import ceil
 
+from PIL import Image
 from absl import app
 import logging
 
 import tensorflow as tf
-from tensorflow.keras.metrics import MeanIoU
+from tensorflow_addons.optimizers import SGDW
 from tensorflow.keras.optimizers import SGD
 from tensorflow.python.keras.metrics import Recall, Precision
+from tensorflow.keras.mixed_precision import experimental as mixed_precision
+
+# enable mixed precision
+# policy = mixed_precision.Policy('mixed_float16')
+# mixed_precision.set_policy(policy)
+# print('Compute dtype: %s' % policy.compute_dtype)
+# print('Variable dtype: %s' % policy.variable_dtype)
 
 from models import *
 from losses import *
+from metrics import MeanIoU
 from utils.callbacks import model_checkpoint, tensorboard, early_stopping
+from utils.ds_preprocess import read_txt, delete_early_ckpt
+from utils.evaluate import evaluate_batch
 from utils.flags import define_flages
 from utils.path import BASE_DIR
 
@@ -71,8 +82,7 @@ def main(argv):
         # model.layers[1].trainable = False
         loss = globals()[FLAGS.loss]
         model.compile(
-            optimizer=SGD(momentum=0.9),
-            # loss='binary_crossentropy',
+            optimizer=SGDW(momentum=0.9, learning_rate=FLAGS.lr, weight_decay=FLAGS.weight_decay),
             loss=loss,
             metrics=["accuracy",
                      Recall(),
@@ -80,8 +90,13 @@ def main(argv):
                      MeanIoU(num_classes=FLAGS.classes)
                      ],
         )
-        model.summary()
+        if 'train' in FLAGS.mode:
+            model.summary()
         logging.info('There are %s layers in model' % len(model.layers))
+        if FLAGS.freeze_layers > 0:
+            logging.info('Freeze first %s layers' % FLAGS.freeze_layers)
+            for i in model.layers[:FLAGS.freeze_layers]:
+                i.trainable = False
         verbose = 1 if FLAGS.debug is True else 2
         if 'train' in FLAGS.mode:
             callbacks = [
@@ -108,13 +123,13 @@ def main(argv):
             #     logging.info('%s:\t\t%s' % (model.metrics_names[i], result[i]))
         if 'test' in FLAGS.mode:
             # 学习valid
-            model.fit(
-                dataset.get('valid'),
-                epochs=3,
-                # callbacks=callbacks,
-                verbose=verbose
-            )
-            model.save_weights(os.path.join(model_dir, 'model.h5'))
+            # model.fit(
+            #     dataset.get('valid'),
+            #     epochs=3,
+            #     # callbacks=callbacks,
+            #     verbose=verbose
+            # )
+            # model.save_weights(os.path.join(model_dir, 'model.h5'))
             # 测试test
             result = model.evaluate(
                 dataset.get('test'),
@@ -123,6 +138,27 @@ def main(argv):
             for i in range(len(result)):
                 logging.info('%s:\t\t%s' % (model.metrics_names[i], result[i]))
             # TODO: remove previous checkpoint
+        if 'predict' in FLAGS.mode:
+            files = read_txt(os.path.join(BASE_DIR, 'dataset/%s/predict.txt' % FLAGS.dataset))
+            output_dir = FLAGS.predict_output_dir
+            os.makedirs(output_dir, exist_ok=True)
+            i = 0
+            ds = dataset.get('predict')
+            for batch in ds:
+                predict = model.predict(batch)
+                for p in predict:
+                    if i % 1000 == 0:
+                        logging.info('curr: %s/%s' % (i, len(files)))
+                    p_r = tf.squeeze(tf.argmax(p, axis=-1)).numpy().astype('int16')
+                    p_r = (p_r + 1) * 100
+                    p_im = Image.fromarray(p_r)
+                    im_path = os.path.join(output_dir, '%s.png' % files[i].split('/')[-1][:-4])
+                    p_im.save(im_path)
+                    i += 1
+        if FLAGS.task == 'visualize_result':
+            dataset.visualize_evaluate(model, FLAGS.mode)
+    delete_early_ckpt(model_dir)
+
 
 # TODO： test的结果如何保存（HParams）
 

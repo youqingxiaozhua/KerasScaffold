@@ -99,7 +99,7 @@ def DeepLabV3Plus(input_shape, classes=66, *args, **kwargs):
 
     x = Conv2D(classes, (1, 1), name='output_layer')(x)
     # x = Activation('sigmoid')(x)
-    x = Activation('softmax')(x)
+    x = Activation('softmax', dtype='float32')(x)
     '''
     x = Activation('softmax')(x) 
     tf.losses.SparseCategoricalCrossentropy(from_logits=True)
