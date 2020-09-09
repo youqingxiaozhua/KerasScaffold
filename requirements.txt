@@ -64,6 +64,7 @@ jupyter==1.0.0
 jupyter-client==5.2.4
 jupyter-console==6.0.0
 jupyter-core==4.5.0
+kaggle==1.5.6
 Keras-Applications==1.0.8
 Keras-Preprocessing==1.1.2
 keyring==10.6.0

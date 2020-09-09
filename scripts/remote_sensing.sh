@@ -4,12 +4,13 @@ export CUDA_VISIBLE_DEVICES="0,1"
 
 model="DeepLabV3Plus"
 loss="categorical_crossentropy"
-lr=0.007
+lr=0.01
 batch=16
+weight_decay=0.00001
 
 python3.7 main.py \
   --batch_size=${batch} \
-  --exp_name="${model}-lr${lr}-${loss}-freeze-L2" \
+  --exp_name="${model}-lr${lr}-${loss}-wd${weight_decay}" \
   --loss="${loss}" \
   --dataset="remote_sensing" \
   --model="${model}" \
@@ -21,7 +22,7 @@ python3.7 main.py \
   --debug \
   --epoch=200 \
   --lr_schedule="poly" \
-  --freeze_layers=119
+  --weight_decay="${weight_decay}"
 
 
 # predict

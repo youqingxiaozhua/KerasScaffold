@@ -22,7 +22,7 @@ from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from models import *
 from losses import *
 from metrics import MeanIoU
-from utils.callbacks import model_checkpoint, tensorboard, early_stopping
+from utils.callbacks import model_checkpoint, tensorboard, early_stopping, lr_schedule
 from utils.ds_preprocess import read_txt, delete_early_ckpt
 from utils.evaluate import evaluate_batch
 from utils.flags import define_flages
@@ -102,7 +102,8 @@ def main(argv):
             callbacks = [
                 model_checkpoint(filepath=model_path, monitor=FLAGS.model_checkpoint_monitor),
                 tensorboard(log_dir=os.path.join(exp_dir, 'tb-logs')),
-                early_stopping(monitor=FLAGS.model_checkpoint_monitor, patience=FLAGS.early_stopping_patience)
+                early_stopping(monitor=FLAGS.model_checkpoint_monitor, patience=FLAGS.early_stopping_patience),
+                lr_schedule(name=FLAGS.lr_schedule, epochs=FLAGS.epoch)
             ]
             train_ds = dataset.get('train')  # get first to calculate train size
             model.fit(

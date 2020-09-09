@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard, LambdaCallback, EarlyStopping
+from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard, LambdaCallback, EarlyStopping, LearningRateScheduler
 
 
 def model_checkpoint(filepath, monitor='val_loss'):
@@ -60,7 +60,7 @@ def lr_schedule(name, epochs=200):
         'poly': poly,
         'constant': constant
     }
-    return schedulers[name]
+    return LearningRateScheduler(schedulers[name], verbose=1)
 
 
 
