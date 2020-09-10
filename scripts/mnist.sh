@@ -7,7 +7,7 @@ python3 ${BASEDIR}/main.py \
   --batch_size=128 \
   --exp_name="test" \
   --dataset="mnist" \
-  --model="alexnet" \
+  --model="lenet" \
   --mode="train_test" \
   --early_stopping_patience=10 \
   --epoch=20 \
