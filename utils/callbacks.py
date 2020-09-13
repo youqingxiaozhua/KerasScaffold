@@ -17,6 +17,7 @@ def model_checkpoint(filepath, monitor='val_loss'):
 def tensorboard(log_dir):
     return TensorBoard(
         log_dir=log_dir,
+        profile_batch='3, 5',
         # histogram_freq=5,
         # write_images=True,
     )
@@ -44,15 +45,24 @@ def save_predict_image(test_img, exp_dir, model):
 
 
 def early_stopping(monitor='val_accuracy',  patience=20):
+    mode_table = {
+        'val_mean_io_u': 'max',
+    }
+    if monitor in mode_table:
+        mode = mode_table[monitor]
+    else:
+        mode = 'auto'
     return EarlyStopping(
-        monitor=monitor, min_delta=0.0005, patience=patience, verbose=1, mode='auto',
+        monitor=monitor, min_delta=0.0005, patience=patience, verbose=1, mode=mode,
         restore_best_weights=True,
     )
 
 
 def lr_schedule(name, epochs=200):
     def poly(epoch, lr):
-        return lr * (1- epoch/epochs) ** 0.9
+        date = lr * (1- epoch/epochs) ** 0.9
+        tf.summary.scalar('learning rate', data=date, step=epoch)
+        return date
 
     def constant(epoch, lr):
         return lr

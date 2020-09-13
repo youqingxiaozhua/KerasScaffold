@@ -57,7 +57,7 @@ class DataLoader:
         # image = tf.image.decode_image(image)  # can not decode tiff
         image = tfio.experimental.image.decode_tiff(image)
         image = image[:,:,:3] # tiff have 4 channels: RGBA, all A channel is 255 here
-        image = tf.cast(image, tf.float32)
+        image = tf.cast(image, tf.float16)
         image /= 255.
         if mask is not None:
             mask = tf.py_function(self.load_mask, [mask], tf.int32)
@@ -86,7 +86,7 @@ class DataLoader:
         mask = tf.squeeze(mask)
         # ont hot by hand
         mask = tf.one_hot(mask, depth=self.classes)
-        mask = tf.cast(mask, tf.float32)
+        mask = tf.cast(mask, tf.float16)
 
         image = tf.reshape(image, self.input_shape)
         mask = tf.reshape(mask, (self.input_shape[0], self.input_shape[1], self.classes))
@@ -104,9 +104,7 @@ class DataLoader:
             mask_ds = tf.data.Dataset.from_tensor_slices(masks)
             ds = tf.data.Dataset.zip((image_ds, mask_ds))
             ds = ds.map(self.load, num_parallel_calls=AUTOTUNE)
-            ds_cache_path = os.path.join(ds_dir, 'cache_%s' % mode)
-            os.makedirs(ds_cache_path)
-            ds.cache(ds_cache_path)
+            ds.cache()
             if 'train' in mode:
                 tf.print('** Augment Start **')
                 ds = ds.map(self.augment, num_parallel_calls=AUTOTUNE)
@@ -154,7 +152,7 @@ class DataLoader:
     def visualize_evaluate(self, model, mode):
         images = self.get_filelist(mode, 'image')
         masks = self.get_filelist(mode, 'mask')
-        evaluate_batch(model, self, images, masks, self.classes, plot_num=0, skip=6)
+        evaluate_batch(model, self, images, masks, self.classes, plot_num=3, skip=3)
 
     def cal_freq(self):
         result = {

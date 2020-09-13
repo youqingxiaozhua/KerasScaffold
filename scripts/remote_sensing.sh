@@ -2,10 +2,10 @@
 #source /home/xuefanglei/venvs/DLHomework/bin/activate
 export CUDA_VISIBLE_DEVICES="0,1"
 
-model="DeepLabV3Plus"
+model="DeepLabV3PlusUNet"
 loss="categorical_crossentropy"
-lr=0.01
-batch=16
+lr=0.006
+batch=48
 weight_decay=0.00001
 
 python3.7 main.py \
@@ -20,14 +20,15 @@ python3.7 main.py \
   --resume='ckpt' \
   --weights='imagenet' \
   --debug \
-  --epoch=200 \
-  --lr_schedule="poly" \
-  --weight_decay="${weight_decay}"
+  --epoch=50 \
+  --weight_decay="${weight_decay}" \
+  --early_stopping_monitor="val_mean_io_u" \
+  --model_checkpoint_monitor="val_mean_io_u"
 
 
 # predict
 #python3.7 main.py \
-#  --batch_size=32 \
+#  --batch_size=128 \
 #  --exp_name="eval" \
 #  --loss="${loss}" \
 #  --dataset="remote_sensing" \
@@ -35,7 +36,7 @@ python3.7 main.py \
 #  --mode="predict" \
 #  --early_stopping_patience=10 \
 #  --lr=${lr} \
-#  --resume='/root/xiaozhua/dl-homework/dataset/remote_sensing/exp/DeepLabV3Plus-lr0.007-categorical_crossentropy/ckpt/model-0020.ckpt.h5' \
+#  --resume='/root/xiaozhua/dl-homework/dataset/remote_sensing/exp/DeepLabV3Plus-lr0.01-categorical_crossentropy-wd0.00001/ckpt/model-0039.ckpt.h5' \
 #  --weights='imagenet' \
 #  --debug \
 #  --epoch=200 \
@@ -49,7 +50,7 @@ python3.7 main.py \
 #  --dataset="remote_sensing" \
 #  --model="${model}" \
 #  --mode="valid" \
-#  --resume='/root/xiaozhua/dl-homework/dataset/remote_sensing/exp/DeepLabV3Plus-lr0.007-categorical_crossentropy/ckpt/model-0020.ckpt.h5' \
+#  --resume='/root/xiaozhua/dl-homework/dataset/remote_sensing/exp/DeepLabV3Plus-lr0.01-categorical_crossentropy-wd0.00001/ckpt/model-0039.ckpt.h5' \
 #  --task='visualize_result'
 
 sh scripts/notice.sh
