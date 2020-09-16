@@ -11,17 +11,17 @@ weight_decay=0.00001
 python3.7 main.py \
   --batch_size=${batch} \
   --exp_name="${model}-lr${lr}-${loss}-wd${weight_decay}" \
-  --loss="${loss}" \
+  --loss="dice_loss" \
   --dataset="remote_sensing" \
   --model="${model}" \
   --mode="train" \
-  --early_stopping_patience=10 \
-  --lr=${lr} \
+  --early_stopping_patience=20 \
+  --lr=0.00005 \
   --resume='ckpt' \
   --weights='imagenet' \
   --debug \
-  --epoch=50 \
-  --weight_decay="${weight_decay}" \
+  --epoch=150 \
+  --weight_decay=0 \
   --early_stopping_monitor="val_mean_io_u" \
   --model_checkpoint_monitor="val_mean_io_u"
 
@@ -36,6 +36,7 @@ python3.7 main.py \
 #  --mode="predict" \
 #  --early_stopping_patience=10 \
 #  --lr=${lr} \
+#  --lr_schedule="poly" \
 #  --resume='/root/xiaozhua/dl-homework/dataset/remote_sensing/exp/DeepLabV3Plus-lr0.01-categorical_crossentropy-wd0.00001/ckpt/model-0039.ckpt.h5' \
 #  --weights='imagenet' \
 #  --debug \

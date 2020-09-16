@@ -160,7 +160,7 @@ def main(argv):
                     i += 1
         if FLAGS.task == 'visualize_result':
             dataset.visualize_evaluate(model, FLAGS.mode)
-    delete_early_ckpt(model_dir)
+    # delete_early_ckpt(model_dir)
 
 
 # TODO： test的结果如何保存（HParams）

@@ -109,7 +109,7 @@ class DataLoader:
                 tf.print('** Augment Start **')
                 ds = ds.map(self.augment, num_parallel_calls=AUTOTUNE)
                 tf.print('** Augment End **')
-                ds = ds.shuffle(buffer_size=10240)
+                ds = ds.shuffle(buffer_size=1024)
             ds = ds.map(self.one_hot, num_parallel_calls=AUTOTUNE)
         tf.print(ds)
         ds = ds.batch(self.batch_size)

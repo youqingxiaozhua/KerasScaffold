@@ -17,8 +17,9 @@ def define_flages():
 
     flags.DEFINE_multi_integer('input_shape', None, 'model input shape')
     flags.DEFINE_integer('early_stopping_patience', 100, 'early_stopping_patience')
-    flags.DEFINE_enum('model_checkpoint_monitor', 'val_accuracy', ('val_accuracy', 'val_loss'),
-                      'early_stopping_patience')
+    flags.DEFINE_string('early_stopping_monitor', 'val_precision', 'early_stopping_patience')
+    flags.DEFINE_enum('model_checkpoint_monitor', 'val_accuracy', ('val_accuracy', 'val_loss', 'val_mean_io_u'),
+                      'model_checkpoint_monitor')
     flags.DEFINE_string('lr_schedule', 'constant', 'lr_schedule')
     flags.DEFINE_bool('debug', False, 'debug mode verbose will set to 1(interact mode)')
     # model
