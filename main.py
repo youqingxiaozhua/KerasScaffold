@@ -90,8 +90,8 @@ def main(argv):
                      MeanIoU(num_classes=FLAGS.classes)
                      ],
         )
-        if 'train' in FLAGS.mode:
-            model.summary()
+        # if 'train' in FLAGS.mode:
+        #     model.summary()
         logging.info('There are %s layers in model' % len(model.layers))
         if FLAGS.freeze_layers > 0:
             logging.info('Freeze first %s layers' % FLAGS.freeze_layers)

@@ -3,6 +3,17 @@ import tensorflow as tf
 from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard, LambdaCallback, EarlyStopping, LearningRateScheduler
 
 
+def get_mode_by_monitor(monitor):
+    mode_table = {
+        'val_mean_io_u': 'max',
+    }
+    if monitor in mode_table:
+        mode = mode_table[monitor]
+    else:
+        mode = 'auto'
+    return mode
+
+
 def model_checkpoint(filepath, monitor='val_loss'):
     return ModelCheckpoint(
         filepath=filepath,
@@ -10,6 +21,7 @@ def model_checkpoint(filepath, monitor='val_loss'):
         verbose=1,
         save_best_only=True,
         save_weights_only=True,
+        mode=get_mode_by_monitor(monitor)
         # save_freq=save_freq, , save_freq=dataset.train_size * FLAGS.save_freq
     )
 
@@ -45,13 +57,7 @@ def save_predict_image(test_img, exp_dir, model):
 
 
 def early_stopping(monitor='val_accuracy',  patience=20):
-    mode_table = {
-        'val_mean_io_u': 'max',
-    }
-    if monitor in mode_table:
-        mode = mode_table[monitor]
-    else:
-        mode = 'auto'
+    mode = get_mode_by_monitor(monitor)
     return EarlyStopping(
         monitor=monitor, min_delta=0.0005, patience=patience, verbose=1, mode=mode,
         restore_best_weights=True,
@@ -65,6 +71,7 @@ def lr_schedule(name, epochs=200):
         return date
 
     def constant(epoch, lr):
+        tf.summary.scalar('learning rate', data=lr, step=epoch)
         return lr
     schedulers = {
         'poly': poly,

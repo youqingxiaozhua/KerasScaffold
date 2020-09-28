@@ -3,7 +3,7 @@ from tensorflow.python.keras import backend as K
 from tensorflow.python.keras.models import Model
 from tensorflow.python.keras.layers import AveragePooling2D, Lambda, Conv2D, Conv2DTranspose, Activation, Reshape, \
     concatenate, \
-    Concatenate, BatchNormalization, ZeroPadding2D, Flatten
+    Concatenate, BatchNormalization, ZeroPadding2D, Flatten, GaussianNoise
 from tensorflow.keras.applications import ResNet101V2
 
 __all__ = ['DeepLabV3Plus', 'DeepLabV3PlusUNet']
@@ -122,7 +122,9 @@ def DeepLabV3Plus(input_shape, classes=66, *args, **kwargs):
 
 def DeepLabV3PlusUNet(input_shape, classes=66, *args, **kwargs):
 
-    base_model = ResNet101V2(input_shape=input_shape, include_top=False)
+    input = tf.keras.Input(shape=input_shape)
+    x = GaussianNoise(0.1)(input)
+    base_model = ResNet101V2(input_tensor=x, include_top=False)
     # base_model.summary()
 
     skip_connections = [
@@ -147,6 +149,6 @@ def DeepLabV3PlusUNet(input_shape, classes=66, *args, **kwargs):
     x = Conv2D(classes, (1, 1), name='output_layer')(x)
     x = Activation('softmax', dtype='float32')(x)
 
-    model = Model(inputs=base_model.input, outputs=x, name='DeepLabV3_Plus')
+    model = Model(inputs=input, outputs=x, name='DeepLabV3_Plus')
     print(f'*** Output_Shape => {model.output_shape} ***')
     return model

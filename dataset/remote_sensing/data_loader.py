@@ -75,7 +75,9 @@ class DataLoader:
         #     stacked = tf.image.resize(stacked, self.input_shape[:2], method='nearest')
         #     image, mask = stacked[0], stacked[1]
         # 随机旋转
-        # if random.random() > 0.5:
+        rotate = random.choice((0, 1, 2, 3))
+        image = tf.image.rot90(image, k=rotate)
+        mask = tf.image.rot90(mask, k=rotate)
 
         image = tf.image.random_brightness(image, max_delta=0.2)
         image = tf.image.random_contrast(image, 0.2, 0.5)
@@ -152,7 +154,7 @@ class DataLoader:
     def visualize_evaluate(self, model, mode):
         images = self.get_filelist(mode, 'image')
         masks = self.get_filelist(mode, 'mask')
-        evaluate_batch(model, self, images, masks, self.classes, plot_num=3, skip=3)
+        evaluate_batch(model, self, images, masks, self.classes, plot_num=3, skip=0)
 
     def cal_freq(self):
         result = {
