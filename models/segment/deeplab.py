@@ -1,12 +1,12 @@
 import tensorflow as tf
 from tensorflow.python.keras import backend as K
 from tensorflow.python.keras.models import Model
-from tensorflow.python.keras.layers import AveragePooling2D, Lambda, Conv2D, Conv2DTranspose, Activation, Reshape, concatenate, \
-    Concatenate, BatchNormalization, ZeroPadding2D, Flatten
+from tensorflow.python.keras.layers import AveragePooling2D, Lambda, Conv2D, Conv2DTranspose, Activation, Reshape, \
+    concatenate, \
+    Concatenate, BatchNormalization, ZeroPadding2D, Flatten, GaussianNoise
 from tensorflow.keras.applications import ResNet101V2
 
-
-__all__ = ['DeepLabV3Plus']
+__all__ = ['DeepLabV3Plus', 'DeepLabV3PlusUNet']
 
 
 def Upsample(tensor, size):
@@ -23,41 +23,49 @@ def Upsample(tensor, size):
     return y
 
 
+def upsample_by_cnn(x, c):
+    """每次上采样为原来两倍"""
+    x = Conv2D(filters=c/2, kernel_size=1, padding='same')(x)
+    x = Conv2D(filters=c, kernel_size=3, padding='same')(x)
+    x = Conv2DTranspose(filters=c, strides=2, kernel_size=3, padding='same')(x)
+    return x
+
+
 def ASPP(tensor):
     '''atrous spatial pyramid pooling'''
     dims = K.int_shape(tensor)
 
     y_pool = AveragePooling2D(pool_size=(dims[1], dims[2]), name='average_pooling')(tensor)
-    y_pool = Conv2D(filters=256, kernel_size=1, padding='same',
+    y_pool = Conv2D(filters=2048, kernel_size=1, padding='same',
                     kernel_initializer='he_normal', name='pool_1x1conv2d', use_bias=False)(y_pool)
     y_pool = BatchNormalization(name=f'bn_1')(y_pool)
     y_pool = Activation('relu', name=f'relu_1')(y_pool)
 
     y_pool = Upsample(tensor=y_pool, size=[dims[1], dims[2]])
 
-    y_1 = Conv2D(filters=256, kernel_size=1, dilation_rate=1, padding='same',
+    y_1 = Conv2D(filters=2048, kernel_size=1, dilation_rate=1, padding='same',
                  kernel_initializer='he_normal', name='ASPP_conv2d_d1', use_bias=False)(tensor)
     y_1 = BatchNormalization(name=f'bn_2')(y_1)
     y_1 = Activation('relu', name=f'relu_2')(y_1)
 
-    y_6 = Conv2D(filters=256, kernel_size=3, dilation_rate=6, padding='same',
+    y_6 = Conv2D(filters=2048, kernel_size=3, dilation_rate=6, padding='same',
                  kernel_initializer='he_normal', name='ASPP_conv2d_d6', use_bias=False)(tensor)
     y_6 = BatchNormalization(name=f'bn_3')(y_6)
     y_6 = Activation('relu', name=f'relu_3')(y_6)
 
-    y_12 = Conv2D(filters=256, kernel_size=3, dilation_rate=12, padding='same',
+    y_12 = Conv2D(filters=2048, kernel_size=3, dilation_rate=12, padding='same',
                   kernel_initializer='he_normal', name='ASPP_conv2d_d12', use_bias=False)(tensor)
     y_12 = BatchNormalization(name=f'bn_4')(y_12)
     y_12 = Activation('relu', name=f'relu_4')(y_12)
 
-    y_18 = Conv2D(filters=256, kernel_size=3, dilation_rate=18, padding='same',
+    y_18 = Conv2D(filters=2048, kernel_size=3, dilation_rate=18, padding='same',
                   kernel_initializer='he_normal', name='ASPP_conv2d_d18', use_bias=False)(tensor)
     y_18 = BatchNormalization(name=f'bn_5')(y_18)
     y_18 = Activation('relu', name=f'relu_5')(y_18)
 
     y = concatenate([y_pool, y_1, y_6, y_12, y_18], name='ASPP_concat')
 
-    y = Conv2D(filters=256, kernel_size=1, dilation_rate=1, padding='same',
+    y = Conv2D(filters=2048, kernel_size=1, dilation_rate=1, padding='same',
                kernel_initializer='he_normal', name='ASPP_conv2d_final', use_bias=False)(y)
     y = BatchNormalization(name=f'bn_final')(y)
     y = Activation('relu', name=f'relu_final')(y)
@@ -66,12 +74,12 @@ def ASPP(tensor):
 
 def DeepLabV3Plus(input_shape, classes=66, *args, **kwargs):
     print('*** Building DeepLabv3Plus Network ***')
-    img_width = input_shape[0]
-    img_height = input_shape[1]
+    img_height = input_shape[0]
+    img_width = input_shape[1]
 
     # base_model = ResNet50(input_shape=input_shape, weights=None, include_top=False)
     base_model = ResNet101V2(input_shape=input_shape, include_top=False)
-    # base_model.summary()
+    base_model.summary()
 
     image_features = base_model.output
     # tf.keras.utils.plot_model(base_model, 'ResNet101V2.png')
@@ -108,5 +116,39 @@ def DeepLabV3Plus(input_shape, classes=66, *args, **kwargs):
         we assume that `y_pred` encodes a probability distribution.
     '''
     model = Model(inputs=base_model.input, outputs=x, name='DeepLabV3_Plus')
+    print(f'*** Output_Shape => {model.output_shape} ***')
+    return model
+
+
+def DeepLabV3PlusUNet(input_shape, classes=66, *args, **kwargs):
+
+    input = tf.keras.Input(shape=input_shape)
+    x = GaussianNoise(0.1)(input)
+    base_model = ResNet101V2(input_tensor=x, include_top=False)
+    # base_model.summary()
+
+    skip_connections = [
+        base_model.get_layer('conv1_conv').output,  # (None, 128, 128, 64)
+        base_model.get_layer('conv2_block2_out').output,  # (None, 64, 64, 256)
+        base_model.get_layer('conv3_block3_out').output,  # (None, 32, 32, 512)
+        base_model.get_layer('conv4_block22_out').output,  # (None, 16, 16, 1024)
+    ]
+
+    image_features = base_model.output    # (None, 8, 8, 2048)
+    x_a = ASPP(image_features)  # (None, 8, 8, 2048)
+    output = Concatenate()([image_features, x_a])
+    for c in (1024, 512, 256, 64):
+        a = upsample_by_cnn(output, c)
+        b = skip_connections.pop()
+        print(a.name, a.shape)
+        print(b.name, b.shape)
+        output = Concatenate()([a, b])
+        # output = Concatenate()([upsample_by_cnn(output, c), skip_connections.pop()])
+
+    x = upsample_by_cnn(output, 32)
+    x = Conv2D(classes, (1, 1), name='output_layer')(x)
+    x = Activation('softmax', dtype='float32')(x)
+
+    model = Model(inputs=input, outputs=x, name='DeepLabV3_Plus')
     print(f'*** Output_Shape => {model.output_shape} ***')
     return model
